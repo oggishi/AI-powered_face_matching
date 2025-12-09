@@ -1,22 +1,38 @@
 version: '3.8'
 
 services:
-  face-matching:
-    build: .
-    container_name: ai-face-matching
+  # 🚀 Main Face Matching API Service
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: face-matching-api
     ports:
       - "8000:8000"
     volumes:
+      # Persist uploaded images
       - ./uploads:/app/uploads
+      # Persist database
       - ./database:/app/database
+      # Cache DeepFace models (avoid re-downloading)
+      - deepface-models:/root/.deepface
     environment:
-      - DEBUG=True
-      - HOST=0.0.0.0
-      - PORT=8000
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
     restart: unless-stopped
+    networks:
+      - face-matching-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/stats')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+networks:
+  face-matching-network:
+    driver: bridge
+
+volumes:
+  deepface-models:
+    driver: local

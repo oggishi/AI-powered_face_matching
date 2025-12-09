@@ -51,21 +51,56 @@ AI-powered_face_matching/
 
 ## 🛠️ Công Nghệ
 
-- **Backend**: FastAPI + Python 3.8+
-- **AI/ML**: face_recognition, dlib, OpenCV
+- **Backend**: FastAPI + Python 3.11
+- **AI/ML**: ArcFace (99.82% accuracy), DeepFace, TensorFlow, RetinaFace, OpenCV
 - **Frontend**: HTML5, CSS3, JavaScript, Bootstrap 5
 - **Database**: SQLite
 - **Deployment**: Docker & Docker Compose
 
 ## 📋 Yêu Cầu Hệ Thống
 
-- Python 3.8 hoặc cao hơn
+### Native Python:
+- Python 3.11 hoặc cao hơn
 - pip
-- (Tùy chọn) Docker & Docker Compose
+- 2GB+ RAM (4GB+ recommended)
+
+### Docker (Recommended):
+- Docker Desktop 4.0+
+- Docker Compose 2.0+
+- 4GB+ RAM
 
 ## 🚀 Cài Đặt
 
-### Cách 1: Chạy trực tiếp với Python
+### ⚡ Cách 1: Docker (KHUYẾN NGHỊ - Nhanh & Dễ)
+
+**Windows:**
+```bash
+# Sử dụng script tự động
+scripts\run-docker.bat
+
+# Hoặc thủ công:
+docker-compose up -d --build
+```
+
+**Linux/Mac:**
+```bash
+# Cấp quyền thực thi
+chmod +x scripts/run-docker.sh
+
+# Chạy script
+./scripts/run-docker.sh
+
+# Hoặc thủ công:
+docker-compose up -d --build
+```
+
+**Truy cập:** http://localhost:8000
+
+📖 **Chi tiết:** Xem [DOCKER.md](DOCKER.md)
+
+---
+
+### 🐍 Cách 2: Native Python
 
 1. **Clone repository**
 ```bash
@@ -103,32 +138,54 @@ python main.py
 - API Documentation: http://localhost:8000/docs
 - Alternative API Docs: http://localhost:8000/redoc
 
-### Cách 2: Chạy với Docker
+---
 
-1. **Build và chạy**
-```bash
-docker-compose up -d
-```
+### 🔄 So Sánh Docker vs Native
 
-2. **Truy cập ứng dụng**
-- Web Interface: http://localhost:8000
+| Tiêu chí | Docker 🐳 | Native Python 🐍 |
+|----------|-----------|------------------|
+| **Setup Time** | 5 phút | 30-60 phút |
+| **Độ khó** | Rất dễ | Trung bình |
+| **Performance** | ~95% | 100% |
+| **Deployment** | Cực dễ | Phức tạp |
+| **Portability** | Hoàn hảo | Khó |
+| **Hot-Reload** | Có (dev mode) | Có |
+
+**→ Khuyến nghị: Dùng Docker cho demo/thesis, Native cho development**
+
+---
 
 ## 📖 Hướng Dẫn Sử Dụng
 
-### 1. Thêm Khuôn Mặt Vào Database
+### 1. Phát Hiện Khuôn Mặt (Detect Face)
+
+- Vào tab "Detect Face"
+- Upload ảnh
+- Xem số lượng khuôn mặt được phát hiện
+- ⚠️ Nếu >1 khuôn mặt: cảnh báo hiện ra
+
+### 2. Thêm Khuôn Mặt Vào Database (Add Face)
 
 - Vào tab "Add Face"
 - Upload ảnh khuôn mặt
 - Nhập thông tin (tên, mô tả)
 - Click "Add to Database"
 
-### 2. Tìm Kiếm Khuôn Mặt
+### 3. Thêm Nhiều Người Cùng Lúc (Batch Add) 🔥
+
+- Vào tab "Batch Add"
+- Upload ảnh nhóm (nhiều người)
+- Nhập tên cách nhau bởi dấu phẩy: `John, Jane, Bob`
+- Click "Add All to Database"
+- Hệ thống tự động: detect → crop → add từng người
+
+### 4. Tìm Kiếm Khuôn Mặt (Search Face)
 
 - Vào tab "Search Face"
 - Upload ảnh cần tìm
-- Hệ thống sẽ hiển thị các khuôn mặt tương tự kèm độ chính xác
+- Hệ thống sẽ hiển thị các khuôn mặt tương tự kèm độ chính xác (ArcFace 99.82%)
 
-### 3. Quản Lý Database
+### 5. Quản Lý Database (Manage Database)
 
 - Vào tab "Manage Database"
 - Xem danh sách khuôn mặt đã lưu

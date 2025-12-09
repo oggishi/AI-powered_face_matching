@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # 🔧 Development version with hot-reload
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: face-matching-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot-reload
+      - .:/app
+      # Persist uploads and database
+      - ./uploads:/app/uploads
+      - ./database:/app/database
+      # Cache DeepFace models
+      - deepface-models:/root/.deepface
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=debug
+      - RELOAD=true
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    networks:
+      - face-matching-network
+
+networks:
+  face-matching-network:
+    driver: bridge
+
+volumes:
+  deepface-models:
+    driver: local
