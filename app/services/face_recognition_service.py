@@ -1,242 +1,387 @@
+"""
+ArcFace Face Recognition Service using DeepFace
+
+Professional-grade face recognition:
+- Models: VGG-Face, Facenet, Facenet512, OpenFace, DeepFace, DeepID, ArcFace, Dlib, SFace
+- Default: ArcFace (99.82% accuracy on LFW)
+- Embedding: 512-D for ArcFace
+- Distance metrics: Cosine similarity
+
+Author: AI Assistant
+Date: 2025
+"""
+
+from deepface import DeepFace
 import cv2
 import numpy as np
-import mediapipe as mp
-from sklearn.metrics.pairwise import cosine_similarity
+from typing import Dict, Any, List, Optional, Tuple
+from pathlib import Path
+import logging
 from PIL import Image
 import io
-import pickle
-from typing import List, Tuple, Optional, Dict
-from pathlib import Path
 import os
-
-from app.core.config import get_settings
-from app.models.face import Face
+import uuid
+import pickle
 from sqlalchemy.orm import Session
 
+logger = logging.getLogger(__name__)
+
+# Import settings
+from app.core.config import get_settings
 settings = get_settings()
 
 
 class FaceRecognitionService:
-    """Service for face detection and recognition using MediaPipe and OpenCV"""
+    """Professional face recognition using DeepFace (ArcFace model)"""
+    
+    _instance = None
+    
+    def __new__(cls):
+        """Singleton pattern"""
+        if cls._instance is None:
+            cls._instance = super(FaceRecognitionService, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
     
     def __init__(self):
-        # Initialize MediaPipe Face Detection and Face Mesh
-        self.mp_face_detection = mp.solutions.face_detection
-        self.mp_face_mesh = mp.solutions.face_mesh
+        """Initialize DeepFace with ArcFace model"""
+        if self._initialized:
+            return
+            
+        print("🚀 Initializing DeepFace (ArcFace model)...")
         
-        # Face Detection model
-        self.face_detection = self.mp_face_detection.FaceDetection(
-            model_selection=1,  # 0 for short-range, 1 for full-range
-            min_detection_confidence=0.5
-        )
+        # Model configuration
+        self.model_name = "ArcFace"  # Best accuracy: 99.82%
+        self.distance_metric = "cosine"
+        self.detector_backend = "retinaface"  # State-of-the-art detector (best)
         
-        # Face Mesh for feature extraction
-        self.face_mesh = self.mp_face_mesh.FaceMesh(
-            static_image_mode=True,
-            max_num_faces=1,
-            min_detection_confidence=0.5
-        )
+        # Thresholds for ArcFace with cosine distance
+        self.recognition_threshold = 0.68
         
-        self.tolerance = settings.FACE_RECOGNITION_TOLERANCE
+        # Pre-load model (first call will download if needed)
+        try:
+            DeepFace.build_model(self.model_name)
+            print(f"✅ {self.model_name} model loaded successfully!")
+            print(f"   - Detector: {self.detector_backend}")
+            print(f"   - Distance metric: {self.distance_metric}")
+            print(f"   - Threshold: {self.recognition_threshold}")
+        except Exception as e:
+            logger.warning(f"Model pre-load warning: {e}")
+        
+        self._initialized = True
     
-    def detect_faces(self, image_path: str) -> List[Tuple[int, int, int, int]]:
+    def detect_face(self, image_path: str) -> Dict[str, Any]:
         """
-        Detect faces in an image using MediaPipe
+        Detect face in image
         
         Args:
             image_path: Path to image file
             
         Returns:
-            List of face locations (top, right, bottom, left)
+            Dict with detection result
         """
         try:
-            # Read image
-            image = cv2.imread(image_path)
-            if image is None:
-                raise ValueError(f"Could not read image: {image_path}")
+            # DeepFace extract_faces returns list of detected faces
+            faces = DeepFace.extract_faces(
+                img_path=str(image_path),
+                detector_backend=self.detector_backend,
+                enforce_detection=False
+            )
             
-            # Convert to RGB
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            if not faces or len(faces) == 0:
+                return {
+                    "success": True,
+                    "face_detected": False,
+                    "bbox": None,
+                    "confidence": 0.0,
+                    "message": "No face detected"
+                }
             
-            # Detect faces
-            results = self.face_detection.process(image_rgb)
+            # Get first/largest face
+            face = faces[0]
             
-            face_locations = []
-            if results.detections:
-                h, w, _ = image.shape
-                for detection in results.detections:
-                    bbox = detection.location_data.relative_bounding_box
-                    
-                    # Convert relative coordinates to absolute
-                    left = int(bbox.xmin * w)
-                    top = int(bbox.ymin * h)
-                    right = int((bbox.xmin + bbox.width) * w)
-                    bottom = int((bbox.ymin + bbox.height) * h)
-                    
-                    # Return in format (top, right, bottom, left)
-                    face_locations.append((top, right, bottom, left))
+            return {
+                "success": True,
+                "face_detected": True,
+                "bbox": face.get("facial_area", None),
+                "confidence": face.get("confidence", 0.0),
+                "message": f"{len(faces)} face(s) detected"
+            }
             
-            return face_locations
         except Exception as e:
-            raise Exception(f"Error detecting faces: {str(e)}")
+            logger.error(f"Detection error: {str(e)}")
+            return {
+                "success": False,
+                "face_detected": False,
+                "bbox": None,
+                "confidence": 0.0,
+                "message": f"Error: {str(e)}"
+            }
     
-    def get_face_encoding(self, image_path: str) -> Optional[np.ndarray]:
+    def encode_face(self, image_path: str) -> Dict[str, Any]:
         """
-        Get face encoding from image using MediaPipe Face Mesh
+        Generate face embedding using ArcFace
         
         Args:
             image_path: Path to image file
             
         Returns:
-            Face encoding array or None if no face detected
+            Dict with encoding result
         """
         try:
-            # Read image
-            image = cv2.imread(image_path)
-            if image is None:
-                return None
+            # DeepFace.represent returns embeddings
+            embeddings = DeepFace.represent(
+                img_path=str(image_path),
+                model_name=self.model_name,
+                detector_backend=self.detector_backend,
+                enforce_detection=True
+            )
             
-            # Convert to RGB
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            if not embeddings:
+                return {
+                    "success": False,
+                    "encoding": None,
+                    "message": "No face detected for encoding"
+                }
             
-            # Process with Face Mesh
-            results = self.face_mesh.process(image_rgb)
+            # Get first face embedding
+            embedding = np.array(embeddings[0]["embedding"])
             
-            if not results.multi_face_landmarks:
-                return None
+            return {
+                "success": True,
+                "encoding": embedding,
+                "bbox": embeddings[0].get("facial_area", None),
+                "message": "Encoding generated successfully"
+            }
             
-            # Extract landmarks from first face
-            face_landmarks = results.multi_face_landmarks[0]
-            
-            # Create feature vector from landmarks (468 landmarks with x, y, z)
-            encoding = []
-            for landmark in face_landmarks.landmark:
-                encoding.extend([landmark.x, landmark.y, landmark.z])
-            
-            return np.array(encoding, dtype=np.float32)
-        
+        except ValueError as e:
+            # No face detected
+            return {
+                "success": False,
+                "encoding": None,
+                "message": "No face detected in image"
+            }
         except Exception as e:
-            raise Exception(f"Error getting face encoding: {str(e)}")
+            logger.error(f"Encoding error: {str(e)}")
+            return {
+                "success": False,
+                "encoding": None,
+                "message": f"Error: {str(e)}"
+            }
     
     def compare_faces(
         self, 
-        known_encoding: np.ndarray, 
-        unknown_encoding: np.ndarray
-    ) -> Tuple[bool, float]:
+        encoding1: np.ndarray, 
+        encoding2: np.ndarray
+    ) -> Dict[str, Any]:
         """
         Compare two face encodings using cosine similarity
         
         Args:
-            known_encoding: Known face encoding
-            unknown_encoding: Unknown face encoding
+            encoding1: First face encoding
+            encoding2: Second face encoding
             
         Returns:
-            Tuple of (is_match, distance)
+            Dict with comparison result
         """
         try:
-            # Calculate cosine similarity
-            similarity = cosine_similarity(
-                known_encoding.reshape(1, -1),
-                unknown_encoding.reshape(1, -1)
-            )[0][0]
+            # Compute cosine distance
+            from scipy.spatial.distance import cosine
+            distance = float(cosine(encoding1, encoding2))
             
-            # Convert similarity to distance (0 = identical, 1 = different)
-            distance = 1 - similarity
+            # Similarity (1 - distance)
+            similarity = 1 - distance
             
-            # Check if match (lower distance = better match)
-            is_match = distance <= self.tolerance
+            # Determine match
+            is_match = distance <= self.recognition_threshold
             
-            return is_match, float(distance)
+            # Confidence percentage
+            confidence = float(similarity * 100)
+            
+            return {
+                "is_match": bool(is_match),
+                "similarity": similarity,
+                "distance": distance,
+                "confidence": confidence
+            }
+            
         except Exception as e:
-            raise Exception(f"Error comparing faces: {str(e)}")
+            logger.error(f"Comparison error: {str(e)}")
+            return {
+                "is_match": False,
+                "similarity": 0.0,
+                "distance": 2.0,
+                "confidence": 0.0
+            }
     
-    def search_face(
-        self, 
-        query_encoding: np.ndarray, 
-        db: Session,
+    def verify_face_match(
+        self,
+        image1_path: str,
+        image2_path: str
+    ) -> Dict[str, Any]:
+        """
+        Verify if two images contain the same person
+        
+        Args:
+            image1_path: Path to first image
+            image2_path: Path to second image
+            
+        Returns:
+            Dict with verification result
+        """
+        try:
+            # DeepFace.verify compares two images directly
+            result = DeepFace.verify(
+                img1_path=str(image1_path),
+                img2_path=str(image2_path),
+                model_name=self.model_name,
+                detector_backend=self.detector_backend,
+                distance_metric=self.distance_metric,
+                enforce_detection=True
+            )
+            
+            return {
+                "success": True,
+                "is_match": bool(result["verified"]),
+                "distance": float(result["distance"]),
+                "threshold": float(result["threshold"]),
+                "similarity": float(1 - result["distance"]) if result["distance"] <= 1 else 0.0,
+                "confidence": float((1 - result["distance"]) * 100) if result["distance"] <= 1 else 0.0,
+                "message": "Verification completed"
+            }
+            
+        except Exception as e:
+            logger.error(f"Verification error: {str(e)}")
+            return {
+                "success": False,
+                "is_match": False,
+                "distance": 2.0,
+                "message": f"Error: {str(e)}"
+            }
+    
+    def crop_faces(self, image_path: str, face_locations: List[Tuple[int, int, int, int]]) -> List[str]:
+        """
+        🔥 Crop individual faces from an image with multiple people
+        
+        Args:
+            image_path: Path to source image
+            face_locations: List of face bounding boxes [(top, right, bottom, left), ...]
+        
+        Returns:
+            List of paths to cropped face images
+        """
+        try:
+            # Load image with CV2
+            image = cv2.imread(str(image_path))
+            
+            if image is None:
+                logger.error(f"Failed to load image: {image_path}")
+                return []
+            
+            cropped_paths = []
+            
+            # Crop each face
+            for idx, (top, right, bottom, left) in enumerate(face_locations):
+                # Extract face region
+                face_img = image[top:bottom, left:right]
+                
+                # Generate unique filename
+                crop_filename = f"{uuid.uuid4()}_face_{idx}.jpg"
+                crop_path = os.path.join(settings.UPLOAD_DIR, crop_filename)
+                
+                # Save cropped face
+                cv2.imwrite(crop_path, face_img)
+                cropped_paths.append(crop_path)
+                
+                logger.info(f"Cropped face {idx + 1}/{len(face_locations)} → {crop_filename}")
+            
+            return cropped_paths
+            
+        except Exception as e:
+            logger.error(f"Crop faces error: {str(e)}")
+            return []
+    
+    def process_image(self, image_path: str) -> Dict[str, Any]:
+        """
+        Complete pipeline: detect and encode face
+        
+        Args:
+            image_path: Path to image file
+            
+        Returns:
+            Dict with encoding result
+        """
+        return self.encode_face(image_path)
+    
+    def search_similar_faces(
+        self,
+        query_encoding: np.ndarray,
+        database_encodings: List[Tuple[Any, np.ndarray]],
         top_k: int = 5
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Search for similar faces in database
         
         Args:
-            query_encoding: Face encoding to search for
-            db: Database session
-            top_k: Number of top results to return
+            query_encoding: Query face encoding
+            database_encodings: List of (person_id, encoding) tuples
+            top_k: Number of top results
             
         Returns:
-            List of matching faces with confidence scores
+            List of matches sorted by similarity
         """
         try:
-            # Get all faces from database
-            all_faces = db.query(Face).all()
-            
-            if not all_faces:
+            if not database_encodings:
                 return []
             
             results = []
-            
-            for face in all_faces:
-                # Deserialize encoding
-                known_encoding = pickle.loads(face.encoding)
-                
-                # Compare faces
-                is_match, distance = self.compare_faces(known_encoding, query_encoding)
-                
-                # Calculate confidence (inverse of distance)
-                confidence = max(0, (1 - distance) * 100)
+            for person_id, db_encoding in database_encodings:
+                comparison = self.compare_faces(query_encoding, db_encoding)
                 
                 results.append({
-                    "face": face.to_dict(),
-                    "distance": float(distance),  # Convert numpy to Python float
-                    "confidence": round(float(confidence), 2),  # Convert to Python float
-                    "is_match": bool(is_match)  # Convert numpy.bool_ to Python bool
+                    "person_id": person_id,
+                    "similarity": comparison["similarity"],
+                    "distance": comparison["distance"],
+                    "confidence": comparison["confidence"],
+                    "is_match": comparison["is_match"]
                 })
             
-            # Sort by distance (lower is better)
-            results.sort(key=lambda x: x["distance"])
+            # Sort by similarity (descending)
+            results.sort(key=lambda x: x["similarity"], reverse=True)
             
-            # Return top_k results
             return results[:top_k]
+            
         except Exception as e:
-            raise Exception(f"Error searching face: {str(e)}")
+            logger.error(f"Search error: {str(e)}")
+            return []
     
-    def encode_face_to_bytes(self, encoding: np.ndarray) -> bytes:
-        """Serialize face encoding to bytes"""
-        return pickle.dumps(encoding)
-    
-    def decode_face_from_bytes(self, encoding_bytes: bytes) -> np.ndarray:
-        """Deserialize face encoding from bytes"""
-        return pickle.loads(encoding_bytes)
-    
-    def save_uploaded_file(self, file_content: bytes, filename: str) -> str:
+    def batch_encode_faces(
+        self,
+        image_paths: List[str],
+        progress_callback: Optional[callable] = None
+    ) -> List[Dict[str, Any]]:
         """
-        Save uploaded file to disk
+        Batch process multiple images
         
         Args:
-            file_content: File content in bytes
-            filename: Original filename
+            image_paths: List of image paths
+            progress_callback: Optional callback(index, total)
             
         Returns:
-            Path to saved file
+            List of encoding results
         """
-        try:
-            # Create upload directory if not exists
-            os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+        results = []
+        total = len(image_paths)
+        
+        for idx, image_path in enumerate(image_paths):
+            result = self.process_image(image_path)
+            result["image_path"] = image_path
+            results.append(result)
             
-            # Generate unique filename
-            import uuid
-            file_ext = Path(filename).suffix
-            unique_filename = f"{uuid.uuid4()}{file_ext}"
-            file_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
-            
-            # Save file
-            with open(file_path, "wb") as f:
-                f.write(file_content)
-            
-            return file_path
-        except Exception as e:
-            raise Exception(f"Error saving file: {str(e)}")
+            if progress_callback:
+                progress_callback(idx + 1, total)
+        
+        return results
     
     def validate_image(self, file_content: bytes) -> bool:
         """
@@ -254,6 +399,95 @@ class FaceRecognitionService:
         except:
             return False
     
+    def save_uploaded_file(self, file_content: bytes, filename: str) -> str:
+        """
+        Save uploaded file to disk
+        
+        Args:
+            file_content: File content in bytes
+            filename: Original filename
+            
+        Returns:
+            Path to saved file
+        """
+        try:
+            # Create upload directory if not exists
+            os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+            
+            # Generate unique filename
+            file_ext = Path(filename).suffix
+            unique_filename = f"{uuid.uuid4()}{file_ext}"
+            file_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
+            
+            # Save file
+            with open(file_path, "wb") as f:
+                f.write(file_content)
+            
+            return file_path
+        except Exception as e:
+            raise Exception(f"Error saving file: {str(e)}")
+    
+    def detect_faces(self, image_path: str) -> List[Tuple[int, int, int, int]]:
+        """
+        Detect ALL faces in an image (compatibility wrapper)
+        
+        Args:
+            image_path: Path to image file
+            
+        Returns:
+            List of face bounding boxes (top, right, bottom, left)
+        """
+        try:
+            # DeepFace extract_faces returns ALL detected faces
+            faces = DeepFace.extract_faces(
+                img_path=str(image_path),
+                detector_backend=self.detector_backend,
+                enforce_detection=False
+            )
+            
+            if not faces or len(faces) == 0:
+                return []
+            
+            face_locations = []
+            
+            # Convert ALL faces from DeepFace format to MediaPipe format
+            for face in faces:
+                bbox = face.get("facial_area", None)
+                if bbox:
+                    # DeepFace bbox format: {'x': left, 'y': top, 'w': width, 'h': height}
+                    top = bbox['y']
+                    left = bbox['x']
+                    bottom = bbox['y'] + bbox['h']
+                    right = bbox['x'] + bbox['w']
+                    
+                    face_locations.append((top, right, bottom, left))
+            
+            return face_locations
+        except Exception as e:
+            logger.error(f"Face detection error: {str(e)}")
+            return []
+    
+    def get_face_encoding(self, image_path: str) -> Optional[np.ndarray]:
+        """
+        Get face encoding from image (compatibility wrapper)
+        
+        Args:
+            image_path: Path to image file
+            
+        Returns:
+            Face encoding array (512-D) or None if no face detected
+        """
+        try:
+            result = self.encode_face(image_path)
+            
+            if not result["success"] or result["encoding"] is None:
+                return None
+            
+            return result["encoding"]
+        except Exception as e:
+            logger.error(f"Face encoding error: {str(e)}")
+            return None
+    
     def draw_face_boxes(
         self, 
         image_path: str, 
@@ -265,7 +499,7 @@ class FaceRecognitionService:
         
         Args:
             image_path: Path to input image
-            face_locations: List of face locations
+            face_locations: List of face locations (top, right, bottom, left)
             output_path: Path to save output image (optional)
             
         Returns:
@@ -303,13 +537,77 @@ class FaceRecognitionService:
         except Exception as e:
             raise Exception(f"Error drawing face boxes: {str(e)}")
     
-    def __del__(self):
-        """Cleanup MediaPipe resources"""
-        if hasattr(self, 'face_detection'):
-            self.face_detection.close()
-        if hasattr(self, 'face_mesh'):
-            self.face_mesh.close()
+    def encode_face_to_bytes(self, encoding: np.ndarray) -> bytes:
+        """Serialize face encoding to bytes"""
+        return pickle.dumps(encoding)
+    
+    def decode_face_from_bytes(self, encoding_bytes: bytes) -> np.ndarray:
+        """Deserialize face encoding from bytes"""
+        return pickle.loads(encoding_bytes)
+    
+    def search_face(
+        self, 
+        query_encoding: np.ndarray, 
+        db: Session,
+        top_k: int = 5
+    ) -> List[Dict]:
+        """
+        Search for similar faces in database
+        
+        Args:
+            query_encoding: Face encoding to search for (512-D)
+            db: Database session
+            top_k: Number of top results to return
+            
+        Returns:
+            List of matching faces with confidence scores
+        """
+        try:
+            from app.models.face import Face
+            
+            # Get all faces from database
+            all_faces = db.query(Face).all()
+            
+            if not all_faces:
+                return []
+            
+            results = []
+            
+            for face in all_faces:
+                # Deserialize encoding
+                known_encoding = pickle.loads(face.encoding)
+                
+                # Compare faces using compare_faces method
+                comparison = self.compare_faces(known_encoding, query_encoding)
+                
+                results.append({
+                    "face": face.to_dict(),
+                    "distance": comparison["distance"],
+                    "confidence": comparison["confidence"],
+                    "is_match": comparison["is_match"]
+                })
+            
+            # Sort by similarity (higher is better)
+            results.sort(key=lambda x: x["confidence"], reverse=True)
+            
+            # Return top_k results
+            return results[:top_k]
+        except Exception as e:
+            raise Exception(f"Error searching face: {str(e)}")
+    
+    def get_model_info(self) -> Dict[str, Any]:
+        """Get model information"""
+        return {
+            "model_name": self.model_name,
+            "detector": self.detector_backend,
+            "distance_metric": self.distance_metric,
+            "embedding_size": 512,
+            "accuracy": "99.82% (LFW benchmark)",
+            "threshold": self.recognition_threshold,
+            "status": "initialized" if self._initialized else "not initialized"
+        }
 
 
-# Create singleton instance
-face_recognition_service = FaceRecognitionService()
+def get_face_service() -> FaceRecognitionService:
+    """Get singleton instance"""
+    return FaceRecognitionService()

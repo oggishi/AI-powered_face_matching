@@ -5,12 +5,19 @@ python-multipart==0.0.6
 pydantic==2.5.0
 pydantic-settings==2.1.0
 
-# Face recognition and image processing - Windows compatible
+# Face recognition and image processing - ArcFace (State-of-the-art)
 opencv-python==4.8.1.78
 Pillow>=10.0.0
 numpy>=1.24.0,<2.0.0
 scikit-learn==1.3.2
-mediapipe==0.10.8
+deepface  # Wrapper for ArcFace, VGG-Face, Facenet, etc.
+tensorflow  # Backend for DeepFace models
+keras  # Deep learning framework
+# insightface==0.2.1  # Replaced by DeepFace wrapper
+# onnxruntime==1.23.2  # Not needed with DeepFace
+# onnx>=1.20.0  # Not needed with DeepFace
+# scikit-image>=0.25.0  # Not needed with DeepFace
+# mediapipe==0.10.8  # Original model (replaced)
 
 # Database
 sqlalchemy>=2.0.35

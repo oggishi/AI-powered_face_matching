@@ -7,7 +7,7 @@ from pathlib import Path
 from app.core.database import get_db
 from app.core.config import get_settings
 from app.models.face import Face, MatchResult
-from app.services.face_recognition_service import face_recognition_service
+from app.services import face_recognition_service
 
 settings = get_settings()
 router = APIRouter(prefix="/api", tags=["face-recognition"])
@@ -25,6 +25,8 @@ async def detect_face(
         - Number of faces detected
         - Face locations
         - Image path with drawn boxes
+        - Warning if multiple faces detected
+        - Cropped face images
     """
     try:
         # Validate file
@@ -53,8 +55,18 @@ async def detect_face(
         
         # Draw boxes around faces
         output_path = None
+        cropped_faces = []
+        warning = None
+        
         if face_locations:
             output_path = face_recognition_service.draw_face_boxes(file_path, face_locations)
+            
+            # ⚠️ Warning if multiple faces
+            if len(face_locations) > 1:
+                warning = f"⚠️ Multiple faces detected ({len(face_locations)}). For Add to Database, please use single-face images."
+            
+            # 🔪 Auto-crop each face
+            cropped_faces = face_recognition_service.crop_faces(file_path, face_locations)
         
         return {
             "success": True,
@@ -62,6 +74,8 @@ async def detect_face(
             "face_locations": face_locations,
             "original_image": file_path,
             "detected_image": output_path,
+            "cropped_faces": cropped_faces,
+            "warning": warning,
             "message": f"Detected {len(face_locations)} face(s)" if face_locations else "No faces detected"
         }
     
@@ -138,6 +152,92 @@ async def add_face(
             "success": True,
             "face": new_face.to_dict(),
             "message": f"Successfully added face for {name}"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/batch-add-faces")
+async def batch_add_faces(
+    file: UploadFile = File(...),
+    names: str = Form(...),  # Comma-separated names
+    db: Session = Depends(get_db)
+):
+    """
+    🔥 Batch add multiple faces from one image with multiple people
+    
+    Args:
+        file: Image file containing multiple faces
+        names: Comma-separated names (e.g., "John, Jane, Bob")
+    
+    Returns:
+        List of added faces
+    """
+    try:
+        # Validate file
+        if not file.filename.lower().endswith(tuple(settings.ALLOWED_EXTENSIONS)):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid file type. Allowed: {', '.join(settings.ALLOWED_EXTENSIONS)}"
+            )
+        
+        # Read and validate
+        content = await file.read()
+        if not face_recognition_service.validate_image(content):
+            raise HTTPException(status_code=400, detail="Invalid image file")
+        
+        # Save file
+        file_path = face_recognition_service.save_uploaded_file(content, file.filename)
+        
+        # Detect faces
+        face_locations = face_recognition_service.detect_faces(file_path)
+        
+        if not face_locations:
+            os.remove(file_path)
+            raise HTTPException(status_code=400, detail="No faces detected")
+        
+        # Parse names
+        name_list = [n.strip() for n in names.split(',')]
+        
+        if len(name_list) != len(face_locations):
+            os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Mismatch: {len(face_locations)} faces detected but {len(name_list)} names provided"
+            )
+        
+        # Crop faces
+        cropped_faces = face_recognition_service.crop_faces(file_path, face_locations)
+        
+        # Add each face to database
+        added_faces = []
+        for idx, (cropped_path, name) in enumerate(zip(cropped_faces, name_list)):
+            # Get encoding
+            encoding = face_recognition_service.get_face_encoding(cropped_path)
+            
+            if encoding is not None:
+                encoding_bytes = face_recognition_service.encode_face_to_bytes(encoding)
+                
+                new_face = Face(
+                    name=name,
+                    description=f"Auto-added from batch (face #{idx + 1})",
+                    image_path=cropped_path,
+                    encoding=encoding_bytes
+                )
+                
+                db.add(new_face)
+                added_faces.append(name)
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "num_added": len(added_faces),
+            "faces": added_faces,
+            "message": f"Successfully added {len(added_faces)} face(s)"
         }
     
     except HTTPException:

@@ -22,7 +22,13 @@ function showAlert(message, type = 'success', targetId = null) {
     `;
     
     if (targetId) {
-        document.getElementById(targetId).innerHTML = alertHTML;
+        const target = document.getElementById(targetId);
+        target.innerHTML = alertHTML;
+        
+        // Auto hide after 5 seconds
+        setTimeout(() => {
+            target.innerHTML = '';
+        }, 5000);
     }
 }
 
@@ -65,6 +71,7 @@ document.getElementById('detectForm').addEventListener('submit', async function(
     
     const fileInput = document.getElementById('detectImage');
     const file = fileInput.files[0];
+    const submitBtn = this.querySelector('button[type="submit"]');
     
     if (!file) {
         showAlert('Please select an image', 'error', 'detectResult');
@@ -73,6 +80,10 @@ document.getElementById('detectForm').addEventListener('submit', async function(
     
     const formData = new FormData();
     formData.append('file', file);
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Detecting...';
     
     showLoading();
     
@@ -94,6 +105,9 @@ document.getElementById('detectForm').addEventListener('submit', async function(
         showAlert('Error: ' + error.message, 'error', 'detectResult');
     } finally {
         hideLoading();
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-camera-fill"></i> Detect Faces';
     }
 });
 
@@ -101,7 +115,18 @@ document.getElementById('detectForm').addEventListener('submit', async function(
 function displayDetectionResult(data) {
     const resultDiv = document.getElementById('detectResult');
     
-    let html = `
+    let html = '';
+    
+    // Show warning if multiple faces
+    if (data.warning) {
+        html += `
+            <div class="message-error fade-in">
+                <i class="bi bi-exclamation-triangle-fill"></i> ${data.warning}
+            </div>
+        `;
+    }
+    
+    html += `
         <div class="detection-info fade-in">
             <h4><i class="bi bi-people-fill"></i> ${data.num_faces}</h4>
             <p class="mb-0">${data.message}</p>
@@ -118,6 +143,29 @@ function displayDetectionResult(data) {
                 </p>
             </div>
         `;
+        
+        // Show cropped faces if available
+        if (data.cropped_faces && data.cropped_faces.length > 0) {
+            html += `
+                <div class="cropped-faces-container">
+                    <h5 class="mt-3"><i class="bi bi-scissors"></i> Cropped Faces</h5>
+                    <div class="row">
+            `;
+            
+            data.cropped_faces.forEach((path, idx) => {
+                html += `
+                    <div class="col-md-4 mb-2">
+                        <img src="/${path}" class="img-thumbnail" alt="Face ${idx + 1}">
+                        <p class="text-center">Face ${idx + 1}</p>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
     } else {
         html += `
             <div class="empty-state">
@@ -137,6 +185,7 @@ document.getElementById('addForm').addEventListener('submit', async function(e) 
     const fileInput = document.getElementById('addImage');
     const name = document.getElementById('personName').value;
     const description = document.getElementById('personDescription').value;
+    const submitBtn = this.querySelector('button[type="submit"]');
     
     if (!fileInput.files[0]) {
         showAlert('Please select an image', 'error', 'addResult');
@@ -149,6 +198,10 @@ document.getElementById('addForm').addEventListener('submit', async function(e) 
     if (description) {
         formData.append('description', description);
     }
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
     
     showLoading();
     
@@ -175,6 +228,9 @@ document.getElementById('addForm').addEventListener('submit', async function(e) 
         showAlert('Error: ' + error.message, 'error', 'addResult');
     } finally {
         hideLoading();
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-person-plus-fill"></i> Add to Database';
     }
 });
 
@@ -184,6 +240,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     
     const fileInput = document.getElementById('searchImage');
     const topK = document.getElementById('topK').value;
+    const submitBtn = this.querySelector('button[type="submit"]');
     
     if (!fileInput.files[0]) {
         showAlert('Please select an image', 'error', 'searchResults');
@@ -193,6 +250,10 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('top_k', topK);
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Searching...';
     
     showLoading();
     
@@ -215,6 +276,9 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         showAlert('Error: ' + error.message, 'error', 'searchResults');
     } finally {
         hideLoading();
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-search"></i> Search';
     }
 });
 
@@ -378,6 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupImagePreview('detectImage', 'detectPreview');
     setupImagePreview('addImage', 'addPreview');
     setupImagePreview('searchImage', 'searchPreview');
+    setupImagePreview('batchImage', 'batchPreview');
     
     // Load initial stats
     loadStats();
@@ -390,4 +455,62 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         loadStats();
     });
+});
+
+// Batch Add Form Handler
+document.getElementById('batchAddForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('batchImage');
+    const names = document.getElementById('batchNames').value;
+    const submitBtn = this.querySelector('button[type="submit"]');
+    
+    if (!fileInput.files[0]) {
+        showAlert('Please select an image', 'error', 'batchResult');
+        return;
+    }
+    
+    if (!names.trim()) {
+        showAlert('Please enter names', 'error', 'batchResult');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('names', names);
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`${API_BASE}/batch-add-faces`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            let message = `${data.message}\n\nAdded faces: ${data.faces.join(', ')}`;
+            showAlert(message, 'success', 'batchResult');
+            // Reset form
+            document.getElementById('batchAddForm').reset();
+            document.getElementById('batchPreview').style.display = 'none';
+            // Reload stats
+            loadStats();
+        } else {
+            showAlert(data.detail || 'Error adding faces', 'error', 'batchResult');
+        }
+    } catch (error) {
+        console.error('Error batch adding faces:', error);
+        showAlert('Error: ' + error.message, 'error', 'batchResult');
+    } finally {
+        hideLoading();
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-collection-fill"></i> Add All to Database';
+    }
 });

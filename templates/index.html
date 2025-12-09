@@ -75,6 +75,11 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch" type="button">
+                    <i class="bi bi-collection"></i> Batch Add
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="manage-tab" data-bs-toggle="tab" data-bs-target="#manage" type="button">
                     <i class="bi bi-database"></i> Manage Database
                 </button>
@@ -191,6 +196,42 @@
                             </div>
                             <div class="card-body">
                                 <div id="searchResults"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch Add Tab -->
+            <div class="tab-pane fade" id="batch" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-8 mx-auto">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bi bi-collection"></i> Batch Add Multiple Faces</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> Upload an image with multiple people. Enter names separated by commas (e.g., "John, Jane, Bob").
+                                </div>
+                                <form id="batchAddForm">
+                                    <div class="mb-3">
+                                        <label for="batchImage" class="form-label">Group Photo *</label>
+                                        <input type="file" class="form-control" id="batchImage" accept="image/*" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <img id="batchPreview" class="img-preview" style="display:none;">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="batchNames" class="form-label">Names (comma-separated) *</label>
+                                        <input type="text" class="form-control" id="batchNames" placeholder="John, Jane, Bob" required>
+                                        <small class="form-text text-muted">Enter names in left-to-right order</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-collection-fill"></i> Add All to Database
+                                    </button>
+                                </form>
+                                <div id="batchResult" class="mt-3"></div>
                             </div>
                         </div>
                     </div>
