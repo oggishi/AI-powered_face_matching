@@ -409,6 +409,16 @@ Quản lý volume đảm bảo tính bền vững:
 
 \textbf{Đánh giá chuẩn:} LFW (13,233 ảnh, 5,749 cá nhân) để xác thực độ chính xác.
 
+\subsubsection{Công Cụ Đánh Giá}
+Hệ thống được trang bị bộ công cụ benchmark tự động trong thư mục \texttt{evaluation/} bao gồm:
+\begin{itemize}
+    \item \texttt{performance\_benchmark.py}: Đo thời gian phát hiện, mã hóa, truy vấn DB, end-to-end
+    \item \texttt{comparison\_baseline.py}: So sánh ArcFace với FaceNet, VGG-Face, MediaPipe
+    \item \texttt{generate\_report.py}: Tự động tạo bảng LaTeX và thống kê tóm tắt
+\end{itemize}
+
+Các script tự động phát hiện ảnh trong thư mục \texttt{uploads/} và thực hiện đánh giá toàn diện, lưu kết quả dưới dạng JSON và bảng LaTeX sẵn sàng để chèn vào báo cáo.
+
 \subsection{Hiệu Năng Phát Hiện}
 Bảng~\ref{tab:detector_comparison} so sánh các phương pháp phát hiện.
 

@@ -1,0 +1,23 @@
+
+============================================================
+SUMMARY STATISTICS FOR THESIS
+============================================================
+
+--- Key Performance Metrics ---
+  • Average Response Time: 21014.74 ms
+  • Response Time Range: 19272.89-23161.51 ms
+
+--- Accuracy Metrics ---
+  • ArcFace Accuracy: 99.82%
+  • MediaPipe Baseline: 75.0%
+  • Improvement: +24.82 percentage points
+
+--- Batch Processing Efficiency ---
+  • Time Saved: 91.78%
+
+--- Deployment Metrics ---
+  • Docker Overhead: 7.3%
+  • Maximum Concurrent Users: 10+
+  • Database Capacity: 10,000+ faces
+
+============================================================

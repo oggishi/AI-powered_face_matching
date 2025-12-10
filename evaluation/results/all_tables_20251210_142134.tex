@@ -1,0 +1,72 @@
+% Generated LaTeX Tables for Thesis
+% Generated: 2025-12-10 14:21:34
+
+% PERFORMANCE TABLE
+\begin{table}[h]
+\centering
+\caption{Hiệu năng xử lý của hệ thống}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Giai đoạn} & \textbf{Trung bình (ms)} & \textbf{Min (ms)} & \textbf{Max (ms)} \\
+\hline
+Phát hiện khuôn mặt & 10112.75 & 9236.07 & 11006.32 \\
+Mã hóa embedding & 10899.84 & 10030.69 & 12588.91 \\
+Truy vấn cơ sở dữ liệu & 2.14 & 1.0 & 6.13 \\
+\textbf{Tổng thời gian} & 21014.74 & 19272.89 & 23161.51 \\
+\hline
+\end{tabular}
+\label{tab:performance}
+\end{table}
+
+% COMPARISON TABLE
+\begin{table}[h]
+\centering
+\caption{So sánh hiệu năng các mô hình nhận diện}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Mô hình} & \textbf{Độ chính xác (\%)} & \textbf{F1-Score (\%)} & \textbf{Kích thước (MB)} & \textbf{Embedding} \\
+\hline
+ArcFace (Hệ thống) & 99.82 & 99.82 & 119 & 512D \\
+FaceNet & N/A & N/A & 92 & 128D \\
+VGG-Face & N/A & N/A & 574 & 4096D \\
+MediaPipe (Baseline) & N/A & N/A & 27 & 128D \\
+\hline
+\end{tabular}
+\label{tab:model_comparison}
+\end{table}
+
+% DETECTOR TABLE
+\begin{table}[h]
+\centering
+\caption{So sánh các thuật toán phát hiện khuôn mặt}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Detector} & \textbf{Độ chính xác (\%)} & \textbf{Tốc độ (ms)} & \textbf{Ổn định} \\
+\hline
+RetinaFace (Hệ thống) & 99.0 & 180 & Cao \\
+MTCNN & 97.5 & 220 & Cao \\
+MediaPipe & 92.0 & 120 & Trung bình \\
+OpenCV Haar & 85.0 & 50 & Thấp \\
+SSD & 90.0 & 95 & Trung bình \\
+\hline
+\end{tabular}
+\label{tab:detector_comparison}
+\end{table}
+
+% SCALABILITY TABLE
+\begin{table}[h]
+\centering
+\caption{Khả năng mở rộng theo số lượng khuôn mặt}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Số khuôn mặt} & \textbf{Thời gian truy vấn (ms)} & \textbf{Hiệu suất} \\
+\hline
+10 & 0.4 & Tốt \\
+50 & 0.73 & Tốt \\
+100 & 0.86 & Tốt \\
+500 & 0.88 & Tốt \\
+1000 & 1.0 & Tốt \\
+\hline
+\end{tabular}
+\label{tab:scalability}
+\end{table}
