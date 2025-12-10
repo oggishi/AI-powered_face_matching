@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-12-10T13:37:04.812945",
+  "metrics": {
+    "detection_time": {},
+    "recognition_time": {},
+    "end_to_end": {},
+    "scalability": {
+      "scalability_results": [
+        {
+          "num_faces": 10,
+          "avg_query_time_ms": 1.93
+        },
+        {
+          "num_faces": 50,
+          "avg_query_time_ms": 1.2
+        },
+        {
+          "num_faces": 100,
+          "avg_query_time_ms": 0.88
+        },
+        {
+          "num_faces": 500,
+          "avg_query_time_ms": 0.8
+        },
+        {
+          "num_faces": 1000,
+          "avg_query_time_ms": 1.42
+        }
+      ]
+    },
+    "batch_processing": {}
+  },
+  "system_info": {
+    "os": "Windows",
+    "os_version": "10.0.26100",
+    "processor": "Intel64 Family 6 Model 158 Stepping 10, GenuineIntel",
+    "cpu_count": 12,
+    "ram_total_gb": 23.85,
+    "python_version": "3.11.9"
+  }
+}

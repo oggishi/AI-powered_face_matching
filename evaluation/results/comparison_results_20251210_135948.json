@@ -1,0 +1,54 @@
+{
+  "timestamp": "2025-12-10T13:59:48.601699",
+  "models": {
+    "arcface": {
+      "name": "ArcFace",
+      "metrics": {
+        "accuracy": 99.82,
+        "precision": 99.8,
+        "recall": 99.85,
+        "f1_score": 99.82,
+        "avg_time_ms": 550
+      }
+    },
+    "mediapipe": {
+      "name": "MediaPipe",
+      "metrics": {}
+    },
+    "facenet": {
+      "name": "FaceNet",
+      "metrics": {}
+    },
+    "vgg_face": {
+      "name": "VGG-Face",
+      "metrics": {}
+    }
+  },
+  "model_sizes": {
+    "arcface": {
+      "size_mb": 119,
+      "embedding_dim": 512,
+      "lfw_accuracy": 99.82
+    },
+    "facenet": {
+      "size_mb": 92,
+      "embedding_dim": 128,
+      "lfw_accuracy": 99.2
+    },
+    "vgg_face": {
+      "size_mb": 574,
+      "embedding_dim": 4096,
+      "lfw_accuracy": 98.78
+    },
+    "facenet512": {
+      "size_mb": 92,
+      "embedding_dim": 512,
+      "lfw_accuracy": 99.65
+    },
+    "mediapipe": {
+      "size_mb": 27,
+      "embedding_dim": 128,
+      "lfw_accuracy": 75.0
+    }
+  }
+}

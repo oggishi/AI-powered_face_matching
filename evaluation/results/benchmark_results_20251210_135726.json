@@ -1,0 +1,84 @@
+{
+  "timestamp": "2025-12-10T13:48:14.735093",
+  "metrics": {
+    "detection_time": {
+      "avg_time_ms": 13746.68,
+      "min_time_ms": 11806.46,
+      "max_time_ms": 19046.61,
+      "std_dev_ms": 2040.89,
+      "total_samples": 10
+    },
+    "recognition_time": {
+      "avg_time_ms": 13824.87,
+      "min_time_ms": 11485.42,
+      "max_time_ms": 17957.41,
+      "std_dev_ms": 1866.62,
+      "total_samples": 10
+    },
+    "end_to_end": {
+      "detection": {
+        "avg_ms": 13053.87,
+        "min_ms": 10982.47,
+        "max_ms": 14237.98,
+        "std_dev_ms": 1294.15
+      },
+      "encoding": {
+        "avg_ms": 13582.09,
+        "min_ms": 11724.43,
+        "max_ms": 14784.61,
+        "std_dev_ms": 1178.55
+      },
+      "database_query": {
+        "avg_ms": 2.51,
+        "min_ms": 0.58,
+        "max_ms": 9.24,
+        "std_dev_ms": 3.77
+      },
+      "total": {
+        "avg_ms": 26638.47,
+        "min_ms": 22707.58,
+        "max_ms": 29023.62,
+        "std_dev_ms": 2445.83
+      }
+    },
+    "scalability": {
+      "scalability_results": [
+        {
+          "num_faces": 10,
+          "avg_query_time_ms": 0.4
+        },
+        {
+          "num_faces": 50,
+          "avg_query_time_ms": 0.6
+        },
+        {
+          "num_faces": 100,
+          "avg_query_time_ms": 0.6
+        },
+        {
+          "num_faces": 500,
+          "avg_query_time_ms": 0.8
+        },
+        {
+          "num_faces": 1000,
+          "avg_query_time_ms": 0.8
+        }
+      ]
+    },
+    "batch_processing": {
+      "sequential_time_ms": 130004.13,
+      "batch_time_ms": 12456.6,
+      "time_saved_ms": 117547.54,
+      "efficiency_gain_percent": 90.42,
+      "num_faces_processed": 10
+    }
+  },
+  "system_info": {
+    "os": "Windows",
+    "os_version": "10.0.26100",
+    "processor": "Intel64 Family 6 Model 158 Stepping 10, GenuineIntel",
+    "cpu_count": 12,
+    "ram_total_gb": 23.85,
+    "python_version": "3.11.9"
+  }
+}
