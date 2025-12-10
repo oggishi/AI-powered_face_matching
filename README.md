@@ -1,6 +1,6 @@
 # 🎭 AI-Powered Face Matching System
 
-Hệ thống nhận diện và so khớp khuôn mặt sử dụng AI, được xây dựng với FastAPI và face_recognition library.
+Hệ thống nhận diện và so khớp khuôn mặt sử dụng AI
 ## 📊 Cấu Trúc Dự Án
 
 ```
