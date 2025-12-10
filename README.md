@@ -138,22 +138,7 @@ python main.py
 - API Documentation: http://localhost:8000/docs
 - Alternative API Docs: http://localhost:8000/redoc
 
----
 
-### 🔄 So Sánh Docker vs Native
-
-| Tiêu chí | Docker 🐳 | Native Python 🐍 |
-|----------|-----------|------------------|
-| **Setup Time** | 5 phút | 30-60 phút |
-| **Độ khó** | Rất dễ | Trung bình |
-| **Performance** | ~95% | 100% |
-| **Deployment** | Cực dễ | Phức tạp |
-| **Portability** | Hoàn hảo | Khó |
-| **Hot-Reload** | Có (dev mode) | Có |
-
-**→ Khuyến nghị: Dùng Docker cho demo/thesis, Native cho development**
-
----
 
 ## 📖 Hướng Dẫn Sử Dụng
 
