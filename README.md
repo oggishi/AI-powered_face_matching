@@ -1,6 +1,6 @@
 # 🎭 AI-Powered Face Matching System
 
-Hệ thống nhận diện và so khớp khuôn mặt sử dụng AI
+Hệ thống nhận diện và so khớp khuôn mặt sử dụng AI với ArcFace và RetinaFace
 ## 📊 Cấu Trúc Dự Án
 
 ```
