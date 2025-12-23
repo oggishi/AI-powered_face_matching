@@ -17,7 +17,8 @@ import uvicorn
 
 from app.core.config import get_settings
 from app.core.database import init_db
-from app.api.routes import router
+from app.api.routes import router as face_router
+from app.api.flower_routes import router as flower_router
 
 # Get settings
 settings = get_settings()
@@ -55,8 +56,9 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # Templates
 templates = Jinja2Templates(directory="templates")
 
-# Include API router
-app.include_router(router)
+# Include API routers
+app.include_router(face_router)
+app.include_router(flower_router)
 
 
 @app.on_event("startup")
@@ -88,7 +90,7 @@ if __name__ == "__main__":
     # Disable reload on Windows to avoid multiprocessing issues with SQLAlchemy
     # For development with auto-reload, use: uvicorn main:app --reload --host 0.0.0.0 --port 8000
     use_reload = settings.DEBUG and sys.platform != "win32"
-    
+
     uvicorn.run(
         "main:app",
         host=settings.HOST,

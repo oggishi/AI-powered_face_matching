@@ -8,11 +8,14 @@ pydantic-settings==2.1.0
 # Face recognition and image processing - ArcFace (State-of-the-art)
 opencv-python==4.8.1.78
 Pillow>=10.0.0
-numpy>=1.24.0,<2.0.0
-scikit-learn==1.3.2
+numpy>=2.0.0  # Use numpy 2.x for Python 3.13
+scikit-learn>=1.3.0  # Use any compatible version with pre-built wheels
 deepface  # Wrapper for ArcFace, VGG-Face, Facenet, etc.
-tensorflow  # Backend for DeepFace models
-keras  # Deep learning framework
+tensorflow>=2.20.0  # Latest TF for Python 3.13
+tensorflow-datasets>=4.9.4
+keras>=3.0.0
+tqdm>=4.66.1
+requests>=2.31.0
 # insightface==0.2.1  # Replaced by DeepFace wrapper
 # onnxruntime==1.23.2  # Not needed with DeepFace
 # onnx>=1.20.0  # Not needed with DeepFace
